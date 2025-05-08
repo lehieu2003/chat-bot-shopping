@@ -1,7 +1,5 @@
 const mongoose = require('mongoose');
 
-// id,name,category,subCategory,gender,price,brand,sizes,colors,material,occasions,style,inStock,imageUrl,url
-
 const ProductSchema = new mongoose.Schema({
     name: {
         type: String,
