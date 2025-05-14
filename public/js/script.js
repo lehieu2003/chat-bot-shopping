@@ -18,6 +18,9 @@ document.addEventListener('DOMContentLoaded', function () {
         return;
     }
 
+    // Update cart count on page load
+    updateCartCount();
+
     // Auth-related UI elements
     const headerInfo = document.querySelector('.info');
     if (headerInfo) {
@@ -47,6 +50,22 @@ document.addEventListener('DOMContentLoaded', function () {
             
             // Redirect to login page
             window.location.href = '/login.html';
+        });
+    }
+
+    // Handle cart icon click
+    const cartIcon = document.getElementById('cart-icon');
+    if (cartIcon) {
+        cartIcon.addEventListener('click', () => {
+            window.location.href = '/cart.html';
+        });
+    }
+
+    // Handle view cart button click
+    const viewCartBtn = document.getElementById('view-cart');
+    if (viewCartBtn) {
+        viewCartBtn.addEventListener('click', () => {
+            window.location.href = '/cart.html';
         });
     }
 
@@ -294,6 +313,9 @@ document.addEventListener('DOMContentLoaded', function () {
             if (data.success) {
                 addBotMessage(`Đã thêm sản phẩm vào giỏ hàng! Hiện có ${data.cartCount} sản phẩm trong giỏ.`);
                 
+                // Update cart count
+                updateCartCount();
+
                 // Add action buttons
                 addActionButtons([
                     {
@@ -311,6 +333,53 @@ document.addEventListener('DOMContentLoaded', function () {
         } catch (error) {
             console.error('Error adding to cart:', error);
             addBotMessage("Xin lỗi, có lỗi xảy ra khi thêm sản phẩm vào giỏ hàng.");
+        }
+    }
+
+    async function updateCartCount() {
+        try {
+            const token = localStorage.getItem('token');
+            if (!token) return;
+            
+            const cartCountEl = document.getElementById('cart-count');
+            if (!cartCountEl) return;
+
+            // Fetch cart data
+            const response = await fetch('/api/chatbot/cart', {
+                method: 'GET',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'x-auth-token': token
+                }
+            });
+
+            const data = await response.json();
+            
+            // Update cart count
+            if (data.success && data.cart) {
+                let totalItems = 0;
+                data.cart.forEach(item => {
+                    if (item.quantity) {
+                        totalItems += item.quantity;
+                    }
+                });
+                
+                cartCountEl.textContent = totalItems;
+                
+                // Pulse animation if items in cart
+                if (totalItems > 0) {
+                    const cartIcon = document.getElementById('cart-icon');
+                    cartIcon.classList.add('pulse');
+                    setTimeout(() => {
+                        cartIcon.classList.remove('pulse');
+                    }, 500);
+                }
+            } else {
+                cartCountEl.textContent = "0";
+            }
+        } catch (error) {
+            console.error('Error updating cart count:', error);
+            document.getElementById('cart-count').textContent = "0";
         }
     }
 });
