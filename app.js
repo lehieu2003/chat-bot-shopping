@@ -5,6 +5,7 @@ const path = require('path');
 const mongoose = require('mongoose');
 const chatbotRoutes = require('./routes/chatbotRoutes');
 const apiTestRoutes = require('./routes/apiTestRoutes');
+const authRoutes = require('./routes/authRoutes');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -24,6 +25,7 @@ mongoose.connect(process.env.MONGODB_URI || 'mongodb://localhost:27017/fashion-c
 // Routes
 app.use('/api/chatbot', chatbotRoutes);
 app.use('/api/test', apiTestRoutes);
+app.use('/api/auth', authRoutes);
 
 // Error handling middleware
 app.use((req, res, next) => {
@@ -49,5 +51,5 @@ app.get('/', (req, res) => {
 // Start server
 app.listen(PORT, () => {
     console.log(`Server is running on port ${PORT}`);
-    console.log(`API routes: /api/chatbot/*`);
+    console.log(`API routes: /api/chatbot/*, /api/auth/*`);
 });

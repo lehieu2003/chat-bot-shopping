@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="vi">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Đăng nhập | Fashion Advisor</title>
+    <link rel="stylesheet" href="/css/auth.css" />
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css"
+    />
+  </head>
+  <body>
+    <div class="container">
+      <header>
+        <div class="logo">
+          <a href="/">
+            <i class="fas fa-tshirt"></i>
+            <h1>Fashion Advisor</h1>
+          </a>
+        </div>
+      </header>
+
+      <main>
+        <div class="auth-container">
+          <h2>Đăng nhập</h2>
+
+          <div class="error-message"></div>
+
+          <form id="login-form">
+            <div class="form-group">
+              <label for="email">Email</label>
+              <input type="email" id="email" name="email" required />
+            </div>
+
+            <div class="form-group">
+              <label for="password">Mật khẩu</label>
+              <input type="password" id="password" name="password" required />
+            </div>
+
+            <button type="submit" class="btn-auth">Đăng nhập</button>
+          </form>
+
+          <div class="auth-links">
+            <p>Chưa có tài khoản? <a href="/register.html">Đăng ký</a></p>
+          </div>
+        </div>
+      </main>
+
+      <footer>
+        <p>&copy; 2023 Fashion Advisor. All rights reserved.</p>
+      </footer>
+    </div>
+
+    <script src="/js/auth.js"></script>
+  </body>
+</html>

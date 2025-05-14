@@ -1,0 +1,270 @@
+.cart-section {
+  padding: 20px;
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+.cart-section h1 {
+  margin-bottom: 30px;
+  text-align: center;
+  color: #333;
+}
+
+.cart-container {
+  background-color: #fff;
+  border-radius: 8px;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+  overflow: hidden;
+}
+
+.cart-headers {
+  display: grid;
+  grid-template-columns: 120px 3fr 1fr 1fr 50px;
+  padding: 15px;
+  background-color: #f8f9fa;
+  font-weight: bold;
+  border-bottom: 1px solid #e0e0e0;
+}
+
+.cart-item {
+  display: grid;
+  grid-template-columns: 120px 3fr 1fr 1fr 50px;
+  padding: 15px;
+  border-bottom: 1px solid #e0e0e0;
+  align-items: center;
+}
+
+.item-image img {
+  width: 100px;
+  height: 100px;
+  object-fit: cover;
+  border-radius: 4px;
+}
+
+.item-details h3 {
+  margin: 0 0 5px;
+  font-size: 16px;
+}
+
+.item-details .price {
+  font-weight: bold;
+  color: #e91e63;
+  margin: 5px 0;
+}
+
+.item-options {
+  display: flex;
+  gap: 10px;
+  font-size: 14px;
+  color: #666;
+}
+
+.item-quantity {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.item-quantity button {
+  width: 30px;
+  height: 30px;
+  border: 1px solid #ddd;
+  background-color: #f8f9fa;
+  cursor: pointer;
+  font-size: 16px;
+  border-radius: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.item-quantity button:hover {
+  background-color: #e9ecef;
+}
+
+.item-quantity span {
+  margin: 0 10px;
+  min-width: 20px;
+  text-align: center;
+}
+
+.item-subtotal {
+  font-weight: bold;
+  color: #333;
+  text-align: center;
+}
+
+.remove-item {
+  background: none;
+  border: none;
+  color: #dc3545;
+  cursor: pointer;
+  font-size: 18px;
+}
+
+.remove-item:hover {
+  color: #c82333;
+}
+
+#cart-summary {
+  padding: 20px;
+  border-top: 2px solid #e0e0e0;
+}
+
+.cart-total {
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  font-size: 18px;
+  font-weight: bold;
+  margin-bottom: 20px;
+}
+
+.cart-total #total-amount {
+  margin-left: 15px;
+  color: #e91e63;
+}
+
+.cart-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 15px;
+}
+
+.btn {
+  padding: 10px 20px;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-weight: bold;
+  text-transform: uppercase;
+  font-size: 14px;
+  transition: all 0.3s;
+}
+
+.btn.primary {
+  background-color: #e91e63;
+  color: white;
+}
+
+.btn.secondary {
+  background-color: #f8f9fa;
+  color: #333;
+  border: 1px solid #ddd;
+}
+
+.btn.primary:hover {
+  background-color: #d81b60;
+}
+
+.btn.secondary:hover {
+  background-color: #e9ecef;
+}
+
+.loading,
+.error {
+  text-align: center;
+  padding: 20px;
+  color: #666;
+}
+
+.error {
+  color: #dc3545;
+}
+
+.empty-cart-message {
+  text-align: center;
+  padding: 40px 0;
+}
+
+.empty-cart-message i {
+  font-size: 60px;
+  color: #ccc;
+  margin-bottom: 20px;
+}
+
+.empty-cart-message p {
+  font-size: 18px;
+  color: #666;
+  margin-bottom: 20px;
+}
+
+@media (max-width: 768px) {
+  .cart-headers,
+  .cart-item {
+    grid-template-columns: 80px 2fr 1fr 1fr 30px;
+  }
+
+  .item-image img {
+    width: 70px;
+    height: 70px;
+  }
+
+  .item-details h3 {
+    font-size: 14px;
+  }
+
+  .item-options {
+    flex-direction: column;
+    gap: 5px;
+  }
+
+  .cart-actions {
+    flex-direction: column;
+  }
+
+  .btn {
+    width: 100%;
+    margin-bottom: 10px;
+  }
+}
+
+@media (max-width: 576px) {
+  .cart-headers .header-details,
+  .cart-headers .header-subtotal,
+  .cart-headers .header-actions {
+    display: none;
+  }
+
+  .cart-headers,
+  .cart-item {
+    grid-template-columns: 60px 3fr 1fr;
+  }
+
+  .item-subtotal,
+  .item-actions {
+    text-align: right;
+  }
+
+  .cart-item {
+    padding: 10px;
+    row-gap: 10px;
+    grid-template-areas:
+      'image details actions'
+      'image subtotal actions'
+      'quantity quantity quantity';
+  }
+
+  .item-image {
+    grid-area: image;
+  }
+
+  .item-details {
+    grid-area: details;
+  }
+
+  .item-subtotal {
+    grid-area: subtotal;
+  }
+
+  .item-actions {
+    grid-area: actions;
+    justify-self: end;
+  }
+
+  .item-quantity {
+    grid-area: quantity;
+    justify-content: flex-start;
+    margin-top: 10px;
+  }
+}

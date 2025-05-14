@@ -117,6 +117,34 @@
       .action-btn:active {
         transform: translateY(0);
       }
+
+      /* User info styling in header */
+      .user-info {
+        display: flex;
+        align-items: center;
+        margin-top: 5px;
+        font-size: 14px;
+      }
+
+      .user-info span {
+        color: #666;
+        margin-right: 10px;
+      }
+
+      #logout-btn {
+        background: none;
+        border: none;
+        color: #4f7df9;
+        cursor: pointer;
+        font-size: 16px;
+        padding: 0;
+        display: flex;
+        align-items: center;
+      }
+
+      #logout-btn:hover {
+        color: #3a6be0;
+      }
     </style>
   </head>
   <body>
@@ -129,6 +157,7 @@
           <div class="info">
             <h2>Fashion Advisor</h2>
             <p>Trợ lý thời trang thông minh</p>
+            <!-- User info will be added here dynamically -->
           </div>
         </div>
 

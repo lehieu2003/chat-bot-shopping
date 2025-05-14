@@ -1,187 +1,220 @@
-const nlpService = require('./nlpService');
-const productService = require('./productService');
 const User = require('../models/User');
+const Product = require('../models/Product');
+const mongoose = require('mongoose');
 
-// Xử lý tin nhắn người dùng
-async function processMessage(userId, message) {
+// Process message from user
+exports.processMessage = async (userId, message) => {
     try {
-        // Tìm hoặc tạo người dùng mới
-        let user = await findOrCreateUser(userId);
+        console.log(`Processing message from user ${userId}: "${message}"`);
         
-        // Phân tích ý định và trích xuất thông tin
-        const intentData = nlpService.identifyIntent(message);
-        const entities = nlpService.extractEntities(message);
+        // Get user from database by ID
+        const user = await User.findById(userId);
+        if (!user) {
+            throw new Error(`User with ID ${userId} not found`);
+        }
         
-        // Lưu tin nhắn vào lịch sử
-        await saveMessageToHistory(user._id, message, false);
+        // Process the message content
+        const response = await generateResponse(message, user);
         
-        // Tạo phản hồi dựa trên ý định
-        const response = await generateResponse(intentData.intent, entities, user);
+        // Save message to chat history if needed
+        if (!user.chatHistory) {
+            user.chatHistory = [];
+        }
         
-        // Lưu phản hồi vào lịch sử
-        await saveMessageToHistory(user._id, response, true);
+        user.chatHistory.push({
+            role: 'user',
+            content: message,
+            timestamp: new Date()
+        });
+        
+        user.chatHistory.push({
+            role: 'assistant',
+            content: response.message,
+            timestamp: new Date()
+        });
+        
+        // Limit chat history to last 50 messages
+        if (user.chatHistory.length > 50) {
+            user.chatHistory = user.chatHistory.slice(-50);
+        }
+        
+        await user.save();
         
         return response;
     } catch (error) {
         console.error('Error processing message:', error);
-        return "Xin lỗi, có lỗi xảy ra khi xử lý tin nhắn của bạn.";
-    }
-}
-
-// Tìm hoặc tạo người dùng mới
-async function findOrCreateUser(userId) {
-    try {
-        let user = await User.findOne({ userId });
-        
-        if (!user) {
-            user = new User({
-                userId,
-                preferences: {
-                    budget: { min: 0, max: 2000000 }
-                }
-            });
-            await user.save();
-        }
-        
-        return user;
-    } catch (error) {
-        console.error('Error finding or creating user:', error);
         throw error;
     }
-}
-
-// Lưu tin nhắn vào lịch sử
-async function saveMessageToHistory(userId, message, isBot) {
-    try {
-        await User.findByIdAndUpdate(
-            userId,
-            {
-                $push: {
-                    chatHistory: {
-                        message,
-                        isBot,
-                        timestamp: new Date()
-                    }
-                }
-            }
-        );
-    } catch (error) {
-        console.error('Error saving message to history:', error);
-    }
-}
-
-// Tạo phản hồi dựa trên ý định
-async function generateResponse(intent, entities, user) {
-    switch (intent) {
-        case 'greeting':
-            return `Xin chào! Tôi là trợ lý ảo tư vấn thời trang. Tôi có thể giúp bạn tìm kiếm quần áo, tư vấn kích cỡ, phong cách và nhiều thông tin khác. Bạn cần tìm gì hôm nay?`;
-            
-        case 'productSearch':
-            const products = await productService.searchProducts(entities);
-            if (products.length > 0) {
-                let response = `Tôi tìm thấy ${products.length} sản phẩm phù hợp với yêu cầu của bạn:\n`;
-                products.slice(0, 3).forEach((product, index) => {
-                    response += `\n${index + 1}. ${product.name} - ${product.price.toLocaleString('vi-VN')}đ`;
-                });
-                response += `\n\nBạn có muốn xem thêm thông tin về sản phẩm nào không?`;
-                return response;
-            } else {
-                return `Xin lỗi, tôi không tìm thấy sản phẩm phù hợp với yêu cầu của bạn. Bạn có thể mô tả cụ thể hơn được không?`;
-            }
-            
-        case 'sizeAdvice':
-            if (entities.productTypes.length > 0) {
-                const productType = entities.productTypes[0];
-                return getSizeAdvice(productType);
-            } else {
-                return `Để tư vấn kích cỡ chính xác, bạn vui lòng cho tôi biết bạn đang tìm kiếm loại quần áo nào (áo, quần, váy...) và số đo của bạn.`;
-            }
-            
-        case 'styleAdvice':
-            if (entities.productTypes.length > 0) {
-                const productType = entities.productTypes[0];
-                return getStyleAdvice(productType, entities);
-            } else {
-                return `Để tư vấn phối đồ, bạn vui lòng cho tôi biết bạn muốn phối với món đồ nào (áo sơ mi, quần jean...) hoặc bạn đang cần phối đồ cho dịp gì?`;
-            }
-            
-        case 'priceQuery':
-            if (entities.productTypes.length > 0) {
-                const productType = entities.productTypes[0];
-                return getPriceInfo(productType);
-            } else {
-                return `Để cung cấp thông tin về giá, bạn vui lòng cho tôi biết bạn đang quan tâm đến sản phẩm nào?`;
-            }
-            
-        case 'occasionAdvice':
-            if (entities.occasions.length > 0) {
-                const occasion = entities.occasions[0];
-                return getOccasionAdvice(occasion);
-            } else {
-                return `Tôi có thể gợi ý trang phục cho nhiều dịp khác nhau như đi làm, đi chơi, đi tiệc, đi biển... Bạn đang cần tư vấn cho dịp nào?`;
-            }
-            
-        case 'recommendations':
-            return getRecommendations(user.preferences);
-            
-        case 'goodbye':
-            return `Cảm ơn bạn đã trò chuyện! Rất vui được giúp đỡ bạn. Chúc bạn một ngày tốt lành và hẹn gặp lại!`;
-            
-        default:
-            return `Xin lỗi, tôi không hiểu yêu cầu của bạn. Bạn có thể hỏi về sản phẩm, kích cỡ, phong cách phối đồ, hoặc nhận gợi ý thời trang.`;
-    }
-}
-
-// Các hàm hỗ trợ tư vấn
-function getSizeAdvice(productType) {
-    const sizeAdvice = {
-        'áo': "Để chọn kích cỡ áo phù hợp, bạn có thể đo vòng ngực và dựa vào bảng size: S (86-90cm), M (91-95cm), L (96-100cm), XL (101-105cm).",
-        'quần': "Để chọn kích cỡ quần phù hợp, bạn cần đo vòng eo và vòng mông. Bảng size thông thường: S (eo 66-70cm), M (eo 71-75cm), L (eo 76-80cm), XL (eo 81-85cm).",
-        'váy': "Để chọn kích cỡ váy phù hợp, bạn cần đo vòng ngực, vòng eo và vòng mông. Bạn có thể tham khảo bảng size trên website hoặc cung cấp số đo để tôi tư vấn cụ thể hơn.",
-        'giày': "Để chọn size giày, bạn có thể đo chiều dài bàn chân. Bảng size cơ bản: Size 36 (22.5cm), 37 (23cm), 38 (23.5cm), 39 (24cm), 40 (25cm)."
-    };
-    
-    return sizeAdvice[productType] || `Để tư vấn kích cỡ cho ${productType}, bạn vui lòng cho tôi biết số đo cơ thể của bạn.`;
-}
-
-function getStyleAdvice(productType, entities) {
-    const styleAdvice = {
-        'áo sơ mi': "Áo sơ mi có thể phối với quần jean hoặc quần tây, đi kèm giày tây hoặc sneaker tùy vào không gian bạn đến.",
-        'quần jean': "Quần jean là item dễ phối, có thể kết hợp với áo thun, áo sơ mi hoặc áo khoác tùy vào mùa và dịp.",
-        'váy': "Váy có thể phối với áo thun để trẻ trung hoặc áo sơ mi để lịch sự. Bạn có thể đi giày cao gót hoặc sandal tùy dịp.",
-        'áo khoác': "Áo khoác thường là lớp ngoài cùng, bên trong bạn có thể mặc áo thun, áo sơ mi. Dưới có thể là quần jean hoặc quần tây tùy phong cách."
-    };
-    
-    return styleAdvice[productType] || `${productType} thường phù hợp với phong cách casual hoặc smart casual. Bạn có thể phối với các trang phục đơn giản để tạo sự hài hòa.`;
-}
-
-function getPriceInfo(productType) {
-    const priceRanges = {
-        'áo': "Áo thun có giá từ 150,000đ đến 500,000đ. Áo sơ mi có giá từ 350,000đ đến 800,000đ tùy chất liệu và thương hiệu.",
-        'quần': "Quần jean thường có giá từ 400,000đ đến 1,000,000đ. Quần tây có giá từ 500,000đ đến 1,200,000đ tùy chất liệu và thương hiệu.",
-        'váy': "Váy có giá từ 300,000đ đến 1,500,000đ tùy vào kiểu dáng, chất liệu và thương hiệu.",
-        'giày': "Giày thể thao có giá từ 500,000đ đến 2,000,000đ. Giày tây có giá từ 800,000đ đến 3,000,000đ tùy thương hiệu và chất liệu."
-    };
-    
-    return priceRanges[productType] || `Giá ${productType} thường dao động từ 300,000đ đến 1,000,000đ tùy vào chất liệu, kiểu dáng và thương hiệu.`;
-}
-
-function getOccasionAdvice(occasion) {
-    const occasionAdvice = {
-        'đi làm': "Cho dịp đi làm, bạn nên chọn trang phục lịch sự như áo sơ mi, quần tây hoặc váy công sở. Màu sắc nên chọn tone trung tính như đen, trắng, xám, be.",
-        'đi chơi': "Cho dịp đi chơi, bạn có thể chọn trang phục thoải mái như áo thun, quần jean, váy suông. Màu sắc và họa tiết có thể đa dạng hơn tùy sở thích.",
-        'đi tiệc': "Cho dịp đi tiệc, bạn có thể chọn váy đầm hoặc suit tùy vào dress code. Nên chọn màu sắc nổi bật hoặc đen lịch sự tùy vào không khí buổi tiệc.",
-        'đi biển': "Cho dịp đi biển, bạn nên chọn trang phục thoáng mát như áo thun, quần short, váy suông hoặc đầm maxi. Nên chọn chất liệu thoáng khí như cotton, linen."
-    };
-    
-    return occasionAdvice[occasion] || `Cho dịp ${occasion}, bạn nên chọn trang phục phù hợp với không gian và thời tiết, đồng thời thể hiện được phong cách cá nhân.`;
-}
-
-function getRecommendations(preferences) {
-    // Trong thực tế, đây sẽ là một thuật toán đề xuất phức tạp hơn
-    return "Dựa trên sở thích của bạn, tôi đề xuất:\n\n1. Áo sơ mi trắng basic - 450,000đ\n2. Quần jean xanh đậm slim fit - 650,000đ\n3. Giày sneaker trắng - 850,000đ\n\nĐây là những items cơ bản, dễ phối và phù hợp nhiều dịp khác nhau.";
-}
-
-module.exports = {
-    processMessage
 };
+
+// Generate response based on user input
+async function generateResponse(message, user) {
+    // Convert message to lowercase for easier matching
+    const lowerMessage = message.toLowerCase();
+    
+    // Basic response object
+    let response = {
+        message: '',
+        products: [],
+        actions: []
+    };
+    
+    // Check for greetings
+    if (containsAny(lowerMessage, ['xin chào', 'hello', 'hi ', 'chào', 'hey'])) {
+        const username = user.username || 'bạn';
+        response.message = `Xin chào ${username}! Tôi có thể giúp gì cho bạn về thời trang hôm nay?`;
+        return response;
+    }
+    
+    // Check for product search requests
+    if (containsAny(lowerMessage, ['áo', 'quần', 'đầm', 'váy', 'giày', 'dép', 'túi', 'ví'])) {
+        return await handleProductSearch(lowerMessage, user);
+    }
+    
+    // Check for style advice
+    if (containsAny(lowerMessage, ['phối đồ', 'style', 'phong cách', 'mặc gì', 'tư vấn'])) {
+        return await handleStyleAdvice(lowerMessage, user);
+    }
+    
+    // Default response if no specific intent is detected
+    response.message = 'Tôi có thể giúp bạn tìm kiếm sản phẩm thời trang, tư vấn phong cách, hoặc gợi ý các outfit phù hợp. Bạn cần hỗ trợ gì về thời trang?';
+    
+    return response;
+}
+
+// Helper functions for handling different types of requests
+async function handleProductSearch(message, user) {
+    let response = {
+        message: '',
+        products: [],
+        actions: []
+    };
+    
+    // Determine product category from message
+    let category = null;
+    if (containsAny(message, ['áo', 'áo sơ mi', 'áo thun', 'áo khoác'])) {
+        category = 'tops';
+    } else if (containsAny(message, ['quần', 'quần jean', 'quần tây', 'quần short'])) {
+        category = 'bottoms';
+    } else if (containsAny(message, ['váy', 'đầm'])) {
+        category = 'dresses';
+    } else if (containsAny(message, ['giày', 'dép', 'sandal', 'boot'])) {
+        category = 'shoes';
+    }
+    
+    // Try to extract price limits
+    const budget = extractBudget(message) || (user.preferences ? user.preferences.budget : { min: 0, max: 2000000 });
+    
+    // Query for products
+    const query = {
+        inStock: true,
+        price: { $gte: budget.min, $lte: budget.max }
+    };
+    
+    if (category) {
+        query.category = category;
+    }
+    
+    // Get matching products
+    const products = await Product.find(query).limit(6);
+    
+    // Generate response
+    if (products.length > 0) {
+        let categoryName = '';
+        switch (category) {
+            case 'tops': categoryName = 'áo'; break;
+            case 'bottoms': categoryName = 'quần'; break;
+            case 'dresses': categoryName = 'váy/đầm'; break;
+            case 'shoes': categoryName = 'giày'; break;
+            default: categoryName = 'sản phẩm'; break;
+        }
+        
+        response.message = `Tôi đã tìm thấy một số ${categoryName} phù hợp với yêu cầu của bạn:`;
+        response.products = products;
+    } else {
+        response.message = 'Xin lỗi, tôi không tìm thấy sản phẩm nào phù hợp với yêu cầu của bạn. Bạn có thể mô tả lại chi tiết hơn được không?';
+    }
+    
+    return response;
+}
+
+async function handleStyleAdvice(message, user) {
+    let response = {
+        message: '',
+        products: []
+    };
+    
+    // Extract style type from message
+    let style = null;
+    if (containsAny(message, ['công sở', 'văn phòng', 'formal', 'business'])) {
+        style = 'formal';
+        response.message = 'Với phong cách công sở, bạn có thể tham khảo những outfit sau đây:';
+    } else if (containsAny(message, ['casual', 'đời thường', 'hàng ngày'])) {
+        style = 'casual';
+        response.message = 'Với phong cách đời thường, tôi gợi ý cho bạn:';
+    } else if (containsAny(message, ['sport', 'thể thao', 'active'])) {
+        style = 'sport';
+        response.message = 'Với phong cách thể thao, bạn có thể tham khảo:';
+    } else {
+        style = 'casual'; // Default style
+        response.message = 'Dưới đây là một số gợi ý phong cách thời trang cho bạn:';
+    }
+    
+    // Get products matching the style
+    const products = await Product.find({ style: { $in: [style] }, inStock: true }).limit(6);
+    response.products = products;
+    
+    return response;
+}
+
+function containsAny(text, keywords) {
+    return keywords.some(keyword => text.includes(keyword));
+}
+
+function extractBudget(message) {
+    let budget = { min: 0, max: 2000000 }; // Default budget
+    
+    const maxRegex = /(?:dưới|không quá|tối đa|max)\s+(\d+)(?:k|nghìn|triệu|tr)/i;
+    const maxMatch = message.match(maxRegex);
+    if (maxMatch) {
+        let value = parseInt(maxMatch[1]);
+        if (maxMatch[0].includes('triệu') || maxMatch[0].includes('tr')) {
+            value = value * 1000000;
+        } else {
+            value = value * 1000;
+        }
+        budget.max = value;
+    }
+    
+    const minRegex = /(?:trên|từ|hơn|min)\s+(\d+)(?:k|nghìn|triệu|tr)/i;
+    const minMatch = message.match(minRegex);
+    if (minMatch) {
+        let value = parseInt(minMatch[1]);
+        if (minMatch[0].includes('triệu') || minMatch[0].includes('tr')) {
+            value = value * 1000000;
+        } else {
+            value = value * 1000;
+        }
+        budget.min = value;
+    }
+    
+    const rangeRegex = /từ\s+(\d+)(?:k|nghìn|triệu|tr)?\s+đến\s+(\d+)(?:k|nghìn|triệu|tr)/i;
+    const rangeMatch = message.match(rangeRegex);
+    if (rangeMatch) {
+        let minValue = parseInt(rangeMatch[1]);
+        let maxValue = parseInt(rangeMatch[2]);
+        
+        if (rangeMatch[0].includes('triệu') || rangeMatch[0].includes('tr')) {
+            minValue = minValue * 1000000;
+            maxValue = maxValue * 1000000;
+        } else {
+            minValue = minValue * 1000;
+            maxValue = maxValue * 1000;
+        }
+        
+        budget.min = minValue;
+        budget.max = maxValue;
+    }
+    
+    return budget;
+}

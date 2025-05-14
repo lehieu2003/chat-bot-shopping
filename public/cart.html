@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="vi">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Giỏ Hàng - Fashion Advisor</title>
+    <link rel="stylesheet" href="css/style.css" />
+    <link rel="stylesheet" href="css/cart.css" />
+    <link rel="stylesheet" href="/css/cart-payment.css" />
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css"
+    />
+  </head>
+  <body>
+    <main class="container">
+      <section class="cart-section">
+        <h1>Giỏ hàng của bạn</h1>
+
+        <div id="cart-empty" style="display: none">
+          <div class="empty-cart-message">
+            <i class="fas fa-shopping-cart"></i>
+            <p>Giỏ hàng của bạn đang trống</p>
+            <a href="index.html" class="btn">Tiếp tục mua sắm</a>
+          </div>
+        </div>
+
+        <div class="cart-container">
+          <div class="cart-headers">
+            <div class="header-item">Sản phẩm</div>
+            <div class="header-details"></div>
+            <div class="header-quantity">Số lượng</div>
+            <div class="header-subtotal">Thành tiền</div>
+            <div class="header-actions"></div>
+          </div>
+
+          <div id="cart-items" style="max-height: 400px; overflow-y: auto">
+            <!-- Cart items will be loaded here -->
+          </div>
+
+          <div id="cart-summary">
+            <div class="cart-total">
+              <span>Tổng cộng:</span>
+              <span id="total-amount">0đ</span>
+            </div>
+            <div class="cart-actions">
+              <button id="continue-shopping" class="btn secondary">
+                Tiếp tục mua sắm
+              </button>
+              <button id="checkout" class="btn primary">Thanh toán</button>
+            </div>
+          </div>
+        </div>
+      </section>
+    </main>
+
+    <script src="js/cart.js"></script>
+  </body>
+</html>
